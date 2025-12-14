@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CaseGen AI — Генератор IT-кейсов</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Light theme */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-hover: #4f46e5;
+            --border-color: #e2e8f0;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.12);
+            --gradient-bg: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+            --gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-theme {
+            /* Dark theme */
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --accent-primary: #818cf8;
+            --accent-secondary: #a78bfa;
+            --accent-hover: #6366f1;
+            --border-color: #334155;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.35);
+            --gradient-bg: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --gradient-accent: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: var(--transition);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* ===== Навигация ===== */
+        .navbar {
+            background: var(--bg-secondary);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: var(--transition);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 22px;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo i {
+            font-size: 24px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 15px;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* ===== Переключатель темы ===== */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 32px;
+        }
+
+        .theme-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--border-color);
+            transition: var(--transition);
+            border-radius: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6px;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 4px;
+            bottom: 4px;
+            background: var(--bg-secondary);
+            transition: var(--transition);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .theme-toggle input:checked + .theme-slider:before {
+            transform: translateX(28px);
+        }
+
+        .theme-icon {
+            font-size: 14px;
+            z-index: 1;
+        }
+
+        .sun-icon {
+            color: #f59e0b;
+        }
+
+        .moon-icon {
+            color: #94a3b8;
+        }
+
+        /* ===== Контейнер ===== */
+        .container {
+            max-width: 1200px;
+            margin: 60px auto;
+            padding: 0 40px;
+        }
+
+        /* ===== Герой секция ===== */
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            margin-bottom: 16px;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+
+        /* ===== Поле ввода ===== */
+        .input-section {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        .input-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-header i {
+            color: var(--accent-primary);
+            font-size: 22px;
+        }
+
+        .input-header h2 {
+            font-size: 22px;
+            color: var(--text-primary);
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .styled-textarea {
+            width: 100%;
+            min-height: 160px;
+            padding: 20px;
+            font-size: 16px;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            resize: vertical;
+            outline: none;
+            transition: var(--transition);
+            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .styled-textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .textarea-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            color: var(--text-tertiary);
+            font-size: 14px;
+        }
+
+        .char-count {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ===== Кнопка ===== */
+        .generate-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            background: var(--gradient-accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn i {
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .generate-btn:hover i {
+            transform: translateX(4px);
+        }
+
+        /* ===== Блоки с кейсами ===== */
+        .cases-section {
+            margin-top: 60px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 26px;
+        }
+
+        .section-title i {
+            color: var(--accent-primary);
+        }
+
+        .cases-count {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent-primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 30px;
+        }
+
+        /* ===== Карточка кейса ===== */
+        .case-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .case-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--accent-primary);
+        }
+
+        .case-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-accent);
+        }
+
+        .case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .case-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-right: 15px;
+        }
+
+        .select-btn {
+            padding: 10px 22px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent-primary);
+            border: 1.5px solid var(--accent-primary);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .select-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .select-btn.saved {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+            border-color: #ef4444 !important;
+        }
+
+        .select-btn.saved:hover {
+            background: #ef4444 !important;
+            color: white !important;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .level-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .level-junior {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+
+        .level-middle {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+
+        .level-senior {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+
+        .duration {
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .case-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .case-description.collapsed {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .toggle-description {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 8px 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .toggle-description:hover {
+            color: var(--accent-hover);
+            gap: 12px;
+        }
+
+        .full-description {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 15px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .full-description.show {
+            display: block;
+        }
+
+        /* ===== Уведомления ===== */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-hover);
+            border-left: 4px solid #10b981;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 350px;
+        }
+
+        .notification.error {
+            border-left-color: #ef4444;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification i {
+            font-size: 20px;
+        }
+
+        .notification.success i {
+            color: #10b981;
+        }
+
+        .notification.error i {
+            color: #ef4444;
+        }
+
+        /* ===== Анимации ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== Адаптивность ===== */
+        @media (max-width: 1024px) {
+            .cases-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 0 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px 20px;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 32px;
+            }
+            
+            .input-section, .hero, .case-card {
+                padding: 25px;
+            }
+            
+            .container {
+                padding: 0 20px;
+                margin: 40px auto;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+
+        /* ===== Утилиты ===== */
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* ===== Скроллбар ===== */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        /* ===== Статус авторизации ===== */
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .auth-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="light-theme">
+
+    <!-- ===== Навигация ===== -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-robot"></i>
+            CaseGen AI
+        </div>
+        
+        <div class="nav-right">
+            <div class="nav-links">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-home"></i> Главная
+                </a>
+                {% if current_user.is_authenticated %}
+                <a href="/my_cases" class="nav-link">
+                    <i class="fas fa-briefcase"></i> Мои кейсы
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-user"></i> {{ current_user.username }}
+                </a>
+                <a href="/logout" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </a>
+                {% else %}
+                <a href="/login" class="nav-link">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </a>
+                <a href="/register" class="nav-link">
+                    <i class="fas fa-user-plus"></i> Регистрация
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Переключатель темы -->
+            <label class="theme-toggle">
+                <input type="checkbox" id="themeSwitch">
+                <span class="theme-slider">
+                    <i class="fas fa-sun theme-icon sun-icon"></i>
+                    <i class="fas fa-moon theme-icon moon-icon"></i>
+                </span>
+            </label>
+        </div>
+    </nav>
+
+    <!-- ===== Основной контейнер ===== -->
+    <div class="container">
+        
+        <!-- Герой секция -->
+        <section class="hero">
+            <h1>Генератор IT-кейсов с искусственным интеллектом</h1>
+            <p class="hero-subtitle">
+                Описывайте ваши навыки, а наша ИИ-система создаст персонализированные учебные кейсы 
+                для прокачки ваших умений в программировании и разработке
+            </p>
+            
+            {% if not current_user.is_authenticated %}
+            <div class="auth-status">
+                <i class="fas fa-info-circle"></i>
+                <span>Чтобы сохранять кейсы, <a href="/login" class="auth-link">войдите</a> или 
+                <a href="/register" class="auth-link">зарегистрируйтесь</a></span>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Секция ввода -->
+        <section class="input-section">
+            <div class="input-header">
+                <i class="fas fa-lightbulb"></i>
+                <h2>Опишите ваши навыки или идею кейса</h2>
+            </div>
+            
+            <form method="post" action="/generate" id="caseForm">
+                <div class="input-container">
+                    <label class="input-label">Чем подробнее описание, тем качественнее кейсы</label>
+                    <textarea 
+                        name="mycasetext" 
+                        class="styled-textarea" 
+                        placeholder="Например: Знаю Python, Django, хочу научиться создавать REST API с аутентификацией и работой с базой данных. Интересуюсь backend-разработкой и микросервисами..."
+                        maxlength="2000"
+                    >{{ user_input }}</textarea>
+                    <div class="textarea-footer">
+                        <div class="char-count">
+                            <i class="fas fa-text-height"></i>
+                            <span id="charCount">0</span>/2000 символов
+                        </div>
+                        <div>
+                            <i class="fas fa-info-circle"></i>
+                            Будет создано 4 уникальных кейса
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="generate-btn" id="generateBtn">
+                    <i class="fas fa-magic"></i>
+                    Сгенерировать кейсы
+                    <span id="loadingIcon" class="hidden"></span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Блок с результатами -->
+        {% if cases %}
+        <section class="cases-section" id="casesSection">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-list-check"></i>
+                    Сгенерированные кейсы
+                </h2>
+                <div class="cases-count">{{ cases|length }} кейса</div>
+            </div>
+            
+            <div class="cases-grid" id="casesGrid">
+                {% for case in cases %}
+                <div class="case-card">
+                    <div class="case-header">
+                        <h3 class="case-title">{{ case.title }}</h3>
+                        <button class="select-btn {% if case.is_saved %}saved{% endif %}" 
+                                onclick="toggleSaveCase({{ case.id }}, this)"
+                                data-case-id="{{ case.id }}">
+                            <i class="fas {% if case.is_saved %}fa-trash-alt{% else %}fa-check-circle{% endif %}"></i>
+                            <span>{% if case.is_saved %}Удалить{% else %}Выбрать{% endif %}</span>
+                        </button>
+                    </div>
+                    
+                    <div class="case-meta">
+                        <span class="level-badge level-{{ case.level|lower }}">
+                            <i class="fas fa-signal"></i>
+                            {{ case.level }}
+                        </span>
+                        <span class="duration">
+                            <i class="fas fa-clock"></i>
+                            {{ case.duration }}
+                        </span>
+                    </div>
+                    
+                    <div class="case-description collapsed" id="short-desc-{{ loop.index }}">
+                        {{ case.short_description }}
+                    </div>
+                    
+                    <button class="toggle-description" onclick="toggleDescription({{ loop.index }})">
+                        <i class="fas fa-chevron-down"></i>
+                        <span>Читать далее</span>
+                    </button>
+                    
+                    <div class="full-description" id="full-desc-{{ loop.index }}">
+                        {{ case.full_description|safe }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+        
+        {% if result and not cases %}
+        <section class="cases-section">
+            <div class="case-card">
+                <div class="full-description show">
+                    {{ result|safe }}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </div>
+
+    <script>
+        // ===== Глобальные переменные =====
+        const isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
+
+        // ===== Переключение темы =====
+        const themeSwitch = document.getElementById('themeSwitch');
+        const body = document.body;
+        
+        // Проверяем сохраненную тему
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            body.classList.remove('light-theme');
+            body.classList.add('dark-theme');
+            themeSwitch.checked = true;
+        }
+        
+        themeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                body.classList.remove('light-theme');
+                body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-theme');
+                body.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+        
+        // ===== Счетчик символов =====
+        const textarea = document.querySelector('.styled-textarea');
+        const charCount = document.getElementById('charCount');
+        
+        if (textarea && charCount) {
+            // Устанавливаем начальное значение
+            charCount.textContent = textarea.value.length;
+            
+            textarea.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+                
+                // Меняем цвет при приближении к лимиту
+                if (this.value.length > 1800) {
+                    charCount.style.color = '#ef4444';
+                } else if (this.value.length > 1500) {
+                    charCount.style.color = '#f59e0b';
+                } else {
+                    charCount.style.color = '';
+                }
+            });
+            
+            // Анимация при фокусе
+            textarea.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            textarea.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        }
+        
+        // ===== Переключение описания кейса =====
+        function toggleDescription(index) {
+            const shortDesc = document.getElementById('short-desc-' + index);
+            const fullDesc = document.getElementById('full-desc-' + index);
+            const toggleBtn = event.currentTarget;
+            const icon = toggleBtn.querySelector('i');
+            const text = toggleBtn.querySelector('span');
+            
+            if (fullDesc.classList.contains('show')) {
+                // Скрываем полное описание
+                fullDesc.classList.remove('show');
+                shortDesc.classList.add('collapsed');
+                icon.className = 'fas fa-chevron-down';
+                text.textContent = 'Читать далее';
+            } else {
+                // Показываем полное описание
+                fullDesc.classList.add('show');
+                shortDesc.classList.remove('collapsed');
+                icon.className = 'fas fa-chevron-up';
+                text.textContent = 'Скрыть';
+            }
+        }
+        
+        // ===== Сохранение/удаление кейса =====
+        async function toggleSaveCase(caseId, button) {
+            if (!isAuthenticated) {
+                showNotification('Пожалуйста, войдите в систему чтобы сохранять кейсы', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+                return;
+            }
+            
+            const icon = button.querySelector('i');
+            const text = button.querySelector('span');
+            
+            // Блокируем кнопку на время запроса
+            button.disabled = true;
+            
+            try {
+                const response = await fetch(`/save_case/${caseId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.action === 'added') {
+                        // Меняем на "Удалить"
+                        button.classList.add('saved');
+                        icon.className = 'fas fa-trash-alt';
+                        text.textContent = 'Удалить';
+                        
+                        // Анимация
+                        button.style.animation = 'pulse 0.5s';
+                        setTimeout(() => {
+                            button.style.animation = '';
+                        }, 500);
+                        
+                        showNotification(result.message);
+                    } else {
+                        // Меняем на "Выбрать"
+                        button.classList.remove('saved');
+                        icon.className = 'fas fa-check-circle';
+                        text.textContent = 'Выбрать';
+                        
+                        showNotification(result.message);
+                    }
+                } else {
+                    showNotification('Ошибка при сохранении кейса', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Ошибка при сохранении кейса', 'error');
+            } finally {
+                // Разблокируем кнопку
+                setTimeout(() => {
+                    button.disabled = false;
+                }, 500);
+            }
+        }
+        
+        // ===== Уведомления =====
+        function showNotification(message, type = 'success') {
+            // Создаем элемент уведомления
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            // Добавляем в DOM
+            document.body.appendChild(notification);
+            
+            // Анимация появления
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Автоматическое удаление через 3 секунды
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // ===== Обработка формы =====
+        const form = document.getElementById('caseForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingIcon = document.getElementById('loadingIcon');
+        
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (textarea.value.trim().length < 10) {
+                    showNotification('Пожалуйста, опишите ваши навыки более подробно (минимум 10 символов)', 'error');
+                    textarea.focus();
+                    return false;
+                }
+                
+                // Показываем анимацию загрузки
+                generateBtn.disabled = true;
+                generateBtn.style.opacity = '0.8';
+                loadingIcon.className = 'loading';
+                loadingIcon.classList.remove('hidden');
+                
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch('/generate', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        // Очищаем старые кейсы
+                        const casesSection = document.getElementById('casesSection');
+                        if (casesSection) {
+                            casesSection.remove();
+                        }
+                        
+                        // Создаем новую секцию с кейсами
+                        const container = document.querySelector('.container');
+                        const newSection = document.createElement('section');
+                        newSection.className = 'cases-section';
+                        newSection.id = 'casesSection';
+                        newSection.innerHTML = `
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <i class="fas fa-list-check"></i>
+                                    Сгенерированные кейсы
+                                </h2>
+                                <div class="cases-count">${result.cases.length} кейса</div>
+                            </div>
+                            <div class="cases-grid" id="casesGrid">
+                                ${result.cases.map((caseItem, index) => `
+                                    <div class="case-card">
+                                        <div class="case-header">
+                                            <h3 class="case-title">${caseItem.title}</h3>
+                                            <button class="select-btn ${caseItem.is_saved ? 'saved' : ''}" 
+                                                    onclick="toggleSaveCase(${caseItem.id}, this)"
+                                                    data-case-id="${caseItem.id}">
+                                                <i class="fas ${caseItem.is_saved ? 'fa-trash-alt' : 'fa-check-circle'}"></i>
+                                                <span>${caseItem.is_saved ? 'Удалить' : 'Выбрать'}</span>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="case-meta">
+                                            <span class="level-badge level-${caseItem.level.toLowerCase()}">
+                                                <i class="fas fa-signal"></i>
+                                                ${caseItem.level}
+                                            </span>
+                                            <span class="duration">
+                                                <i class="fas fa-clock"></i>
+                                                ${caseItem.duration}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="case-description collapsed" id="short-desc-${index + 1}">
+                                            ${caseItem.short_description}
+                                        </div>
+                                        
+                                        <button class="toggle-description" onclick="toggleDescription(${index + 1})">
+                                            <i class="fas fa-chevron-down"></i>
+                                            <span>Читать далее</span>
+                                        </button>
+                                        
+                                        <div class="full-description" id="full-desc-${index + 1}">
+                                            ${caseItem.full_description}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        
+                        container.appendChild(newSection);
+                        
+                        // Прокручиваем к результатам
+                        newSection.scrollIntoView({ behavior: 'smooth' });
+                        
+                        showNotification('Кейсы успешно сгенерированы!');
+                    } else {
+                        showNotification('Ошибка при генерации кейсов', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showNotification('Ошибка при генерации кейсов', 'error');
+                } finally {
+                    // Сбрасываем состояние кнопки
+                    generateBtn.disabled = false;
+                    generateBtn.style.opacity = '1';
+                    loadingIcon.classList.add('hidden');
+                }
+            });
+        }
+        
+        // ===== Динамическое изменение высоты textarea =====
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        }
+        
+        // ===== Инициализация при загрузке =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Автоматически подстраиваем высоту textarea если есть текст
+            if (textarea && textarea.value) {
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            }
+        });
+    </script>
+
+</body>
+</html>
