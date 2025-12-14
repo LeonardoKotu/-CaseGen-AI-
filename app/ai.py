@@ -3,8 +3,8 @@ import json
 import re
 
 # === Данные YandexGPT ===
-IAM_TOKEN = "t1.9euelZqUzJLKzp2SzIvLlJzPk8nKme3rnpWals-Pi5COkM2PyZPJkJrHj5Hl8_diBgU2-e90GEVb_t3z9yI1Ajb573QYRVv-zef1656Vmp6Sz8eeiYmSyY6bjpyXlc6V7_zF656Vmp6Sz8eeiYmSyY6bjpyXlc6V.IAOqkhF9PG98_-7KEisdBP-m_VlZIpv1D83rXCCjYzEXZWJlJWUPy_YeyzFKmMj3tB5-FLUP1MTUtaFZwRT1Cg"
-FOLDER_ID = "b1gpr8douqjgn3bn9bab"
+IAM_TOKEN = ""
+FOLDER_ID = ""
 
 # === История сообщений ===
 messages = [
@@ -121,4 +121,5 @@ def ask_agent(user_message):
     except Exception as e:
         print(f"Ошибка парсинга JSON: {e}")
         print(f"Ответ ИИ: {answer_text}")
+
         return {"cases": []}
