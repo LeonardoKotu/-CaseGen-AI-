@@ -31,7 +31,7 @@
 
 ### 1. Клонирование и настройка
 ```bash
-git clone https://github.com/yourusername/casegen-ai.git
+git clone https://github.com/LeonardoKotu/casegen-ai.git
 cd casegen-ai
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
@@ -92,10 +92,7 @@ casegen-ai/
 4. Запушьте (`git push origin feature/name`)
 5. Откройте Pull Request
 
-## 📄 Лицензия
-MIT License - смотрите [LICENSE](LICENSE)
+--
 
----
-⭐ **Поставьте звезду, если проект полезен!** ⭐
 
-*Сделано с использованием YandexGPT API*
+Благодарю за внмиание.
