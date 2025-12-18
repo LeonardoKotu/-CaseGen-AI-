@@ -2,124 +2,97 @@ import requests
 import json
 import re
 
-# === Данные YandexGPT ===
-IAM_TOKEN = ""
-FOLDER_ID = ""
+OPENROUTER_API_KEY = "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"
+MODEL = "meta-llama/llama-3-8b-instruct"  # ← ЭТА МОДЕЛЬ ТОЧНО РАБОТАЕТ
 
-# === История сообщений ===
-messages = [
-    {
-        "role": "system",
-        "text": """
+system_prompt = """
 Ты — эксперт по IT-кейсам и техническим заданиям.
 
-Твоя задача:
-на основе входного описания кейса создать 4 РАЗНЫХ кейса для IT-специалистов.
-
-ОБЯЗАТЕЛЬНЫЕ ТРЕБОВАНИЯ:
-- Создай РОВНО 4 разных кейса
-- Каждый кейс должен быть уникальным
-- Используй JSON формат для ответа
-- Каждый кейс должен иметь структуру:
-{
-  "title": "Название кейса",
-  "level": "junior/middle/senior",
-  "duration": "например, 2 недели",
-  "short_description": "Краткое описание (3-5 предложений)",
-  "full_description": "Полное описание со всей структурой"
-}
-
-СТРУКТУРА full_description:
-## Общая информация
-- **Сложность:** 
-- **Уровень:** (junior / middle / senior)
-- **Оценка времени:** 
-
-## Описание задачи
-Краткое описание задачи в 3–5 предложениях.
-
-## Функциональные требования
-- ...
-- ...
-- ...
-
-## Технические требования
-- Язык программирования
-- Использование ООП
-- Обработка ошибок
-- Проверка корректности ввода
-
-## Ожидаемый результат
-Что именно должно уметь приложение после выполнения кейса.
+Создай РОВНО 4 РАЗНЫХ кейса по входному описанию.
 
 ВАЖНО:
-- Ответ должен быть ТОЛЬКО в формате JSON
-- Не добавляй никакого текста кроме JSON
-- Пример ответа:
+- Выведи ТОЛЬКО валидный JSON, без пояснений, без ```json```, без текста до/после.
+- Значение поля "full_description" должно быть СТРОКОЙ, содержащей весь текст кейса.
+- Внутри "full_description" можно использовать markdown (##, **...**), переносы строк (\\n), но ВСЁ ЭТО — ОДНА СТРОКА в JSON.
+- Не создавай вложенные JSON-объекты внутри "full_description".
+
+Пример КОРРЕКТНОГО фрагмента:
+{
+  "title": "Кейс про калькулятор",
+  "level": "junior",
+  "duration": "1 неделя",
+  "short_description": "Сделать консольный калькулятор",
+  "full_description": "## Общая информация\\n- **Сложность:** junior\\n- **Оценка времени:** 1 неделя\\n\\n## Описание задачи\\nНужно реализовать калькулятор..."
+}
+
+Твоя задача — сгенерировать 4 таких кейса в формате:
 {
   "cases": [
-    {
-      "title": "...",
-      "level": "...",
-      "duration": "...",
-      "short_description": "...",
-      "full_description": "..."
-    },
+    { "title": "...", "level": "...", "duration": "...", "short_description": "...", "full_description": "..." },
     ...
   ]
 }
-"""
-    }
-]
 
+НЕ ДОБАВЛЯЙ НИЧЕГО КРОМЕ ВАЛИДНОГО JSON.
+"""
 
 def ask_agent(user_message):
-    """
-    Отправляет запрос к YandexGPT и получает ответ в формате JSON
-    """
-    # Добавляем сообщение пользователя
-    messages.append({"role": "user", "text": f"Создай 4 кейса на основе: {user_message}"})
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Создай 4 кейса на основе: {user_message}"}
+    ]
 
-    # Подготовка запроса к YandexGPT
     data = {
-        "modelUri": f"gpt://{FOLDER_ID}/yandexgpt/latest",
-        "completionOptions": {
-            "temperature": 0.7,
-            "maxTokens": 2000
-        },
-        "messages": messages
+        "model": MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 2500
     }
 
     headers = {
-        "Authorization": f"Bearer {IAM_TOKEN}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
 
-    response = requests.post(
-        "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
-        headers=headers,
-        data=json.dumps(data)
-    )
-
-    result = response.json()
-    answer_text = result["result"]["alternatives"][0]["message"]["text"]
-    
-    # Добавляем ответ модели в историю
-    messages.append({"role": "assistant", "text": answer_text})
-
-    # Пытаемся извлечь JSON из ответа
     try:
-        # Ищем JSON в тексте (на случай, если модель добавила что-то кроме JSON)
-        json_match = re.search(r'\{.*\}', answer_text, re.DOTALL)
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(data),
+            timeout=45  # даём время на генерацию
+        )
+    except requests.Timeout:
+        print("Таймаут: модель слишком долго отвечает")
+        return {"cases": []}
+
+    if response.status_code != 200:
+        print(f"Ошибка OpenRouter: {response.status_code} — {response.text}")
+        return {"cases": []}
+
+    try:
+        answer_text = response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"Ошибка извлечения ответа: {e}")
+        return {"cases": []}
+
+    # Очистка от ```json ... ```
+    cleaned = re.sub(r'^```(?:json)?\s*', '', answer_text, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s*```$', '', cleaned)
+
+    try:
+        # Извлекаем JSON
+        json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
         if json_match:
-            json_str = json_match.group()
-            data = json.loads(json_str)
-            return data
+            return json.loads(json_match.group())
         else:
-            # Если не нашли JSON, возвращаем пустую структуру
+            print("JSON не найден в ответе")
             return {"cases": []}
     except Exception as e:
         print(f"Ошибка парсинга JSON: {e}")
-        print(f"Ответ ИИ: {answer_text}")
-
+        print("Ответ:", answer_text)
         return {"cases": []}
+
+# Тест
+if __name__ == "__main__":
+    result = ask_agent("Консольное приложение для управления задачами (To-Do list)")
+    print(json.dumps(result, ensure_ascii=False, indent=2))
