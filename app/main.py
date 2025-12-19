@@ -208,4 +208,8 @@ def complete_case(case_id):
     return jsonify({'success': False}), 404
 
 if __name__ == '__main__':
+
     app.run(debug=True)
+else:
+    # Для запуска на Vercel (как серверless-функция)
+    application = app
