@@ -2,7 +2,7 @@ import requests
 import json
 import re
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 MODEL = "meta-llama/llama-3-8b-instruct"  # ← ЭТА МОДЕЛЬ ТОЧНО РАБОТАЕТ
 
 system_prompt = """
@@ -96,5 +96,6 @@ def ask_agent(user_message):
 if __name__ == "__main__":
     result = ask_agent("Консольное приложение для управления задачами (To-Do list)")
     print(json.dumps(result, ensure_ascii=False, indent=2))
+
 
 
