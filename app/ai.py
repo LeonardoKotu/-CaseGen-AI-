@@ -1,101 +1,134 @@
+#
 import requests
 import json
-import re
+import os
+import time
 
-OPENROUTER_API_KEY = "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"
-MODEL = "meta-llama/llama-3-8b-instruct"  # ← ЭТА МОДЕЛЬ ТОЧНО РАБОТАЕТ
+GROQ_API_KEY = "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"
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "llama-3.1-8b-instant"
 
-system_prompt = """
-Ты — эксперт по IT-кейсам и техническим заданиям.
+if not GROQ_API_KEY:
+    raise RuntimeError("❌ Не задан GROQ_API_KEY в переменных окружения")
 
-Создай РОВНО 4 РАЗНЫХ кейса по входному описанию.
 
-ВАЖНО:
-- Выведи ТОЛЬКО валидный JSON, без пояснений, без ```json```, без текста до/после.
-- Значение поля "full_description" должно быть СТРОКОЙ, содержащей весь текст кейса.
-- Внутри "full_description" можно использовать markdown (##, **...**), переносы строк (\\n), но ВСЁ ЭТО — ОДНА СТРОКА в JSON.
-- Не создавай вложенные JSON-объекты внутри "full_description".
+SYSTEM_PROMPT = """Ты — генератор IT-кейсов.
 
-Пример КОРРЕКТНОГО фрагмента:
-{
-  "title": "Кейс про калькулятор",
-  "level": "junior",
-  "duration": "1 неделя",
-  "short_description": "Сделать консольный калькулятор",
-  "full_description": "## Общая информация\\n- **Сложность:** junior\\n- **Оценка времени:** 1 неделя\\n\\n## Описание задачи\\nНужно реализовать калькулятор..."
-}
+СТРОГИЕ ПРАВИЛА:
+1. Отвечай ТОЛЬКО валидным JSON
+2. Никакого текста вне JSON
+3. JSON должен быть полностью закрыт
+4. Верни РОВНО 4 кейса
+5. Каждый кейс ОБЯЗАН содержать:
+   - title
+   - level
+   - duration
+   - short_description
+   - full_description
+6. В full_description используй \\n для переносов строк
 
-Твоя задача — сгенерировать 4 таких кейса в формате:
+Формат ответа:
 {
   "cases": [
-    { "title": "...", "level": "...", "duration": "...", "short_description": "...", "full_description": "..." },
-    ...
+    {
+      "title": "",
+      "level": "",
+      "duration": "",
+      "short_description": "",
+      "full_description": ""
+    }
   ]
 }
-
-НЕ ДОБАВЛЯЙ НИЧЕГО КРОМЕ ВАЛИДНОГО JSON.
 """
 
-def ask_agent(user_message):
+
+def ask_agent(topic, retries=2):
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Создай 4 кейса на основе: {user_message}"}
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"Создай 4 разных IT-кейса на тему: {topic}"}
     ]
 
-    data = {
-        "model": MODEL,
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 2500
-    }
-
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
 
-    try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            data=json.dumps(data),
-            timeout=45  # даём время на генерацию
-        )
-    except requests.Timeout:
-        print("Таймаут: модель слишком долго отвечает")
-        return {"cases": []}
+    for attempt in range(retries + 1):
+        try:
+            response = requests.post(
+                API_URL,
+                headers=headers,
+                json={
+                    "model": MODEL,
+                    "messages": messages,
+                    "temperature": 0.4,
+                    "max_tokens": 2000
+                },
+                timeout=30
+            )
 
-    if response.status_code != 200:
-        print(f"Ошибка OpenRouter: {response.status_code} — {response.text}")
-        return {"cases": []}
+            if response.status_code != 200:
+                raise RuntimeError(
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
 
-    try:
-        answer_text = response.json()["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"Ошибка извлечения ответа: {e}")
-        return {"cases": []}
+            content = response.json()["choices"][0]["message"]["content"].strip()
 
-    # Очистка от ```json ... ```
-    cleaned = re.sub(r'^```(?:json)?\s*', '', answer_text, flags=re.IGNORECASE)
-    cleaned = re.sub(r'\s*```$', '', cleaned)
+            # ⛔ без regex — сразу JSON
+            data = json.loads(content)
 
-    try:
-        # Извлекаем JSON
-        json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group())
-        else:
-            print("JSON не найден в ответе")
-            return {"cases": []}
-    except Exception as e:
-        print(f"Ошибка парсинга JSON: {e}")
-        print("Ответ:", answer_text)
-        return {"cases": []}
+            if "cases" not in data or not isinstance(data["cases"], list):
+                raise ValueError("Нет массива cases")
 
-# Тест
+            if len(data["cases"]) != 4:
+                raise ValueError("Должно быть ровно 4 кейса")
+
+            valid_cases = []
+            for case in data["cases"]:
+                required = (
+                    "title",
+                    "level",
+                    "duration",
+                    "short_description",
+                    "full_description"
+                )
+
+                if not all(k in case for k in required):
+                    raise ValueError("Неполный кейс")
+
+                case["full_description"] = case["full_description"].replace("\n", "\\n")
+                valid_cases.append(case)
+
+            return {"cases": valid_cases}
+
+        except Exception as e:
+            print(f"❌ Попытка {attempt + 1}: {e}")
+
+            messages.append({
+                "role": "user",
+                "content": (
+                    "Ты вернул невалидный JSON. "
+                    "Исправь и верни ТОЛЬКО валидный JSON "
+                    "в исходном формате."
+                )
+            })
+
+            time.sleep(1)
+
+    return {"cases": []}
+
+
 if __name__ == "__main__":
-    result = ask_agent("Консольное приложение для управления задачами (To-Do list)")
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    topic = "веб-приложения для мониторинга"
+    print(f"🔹 Тема: {topic}")
 
+    result = ask_agent(topic)
 
-
+    print("\n" + "=" * 50)
+    if result["cases"]:
+        print(f"✅ Сгенерировано {len(result['cases'])} кейсов:\n")
+        for i, case in enumerate(result["cases"], 1):
+            print(f"{i}. {case['title']} ({case['level']}, {case['duration']})")
+            print(f"   {case['short_description']}\n")
+    else:
+        print("❌ Кейсы не сгенерированы")
